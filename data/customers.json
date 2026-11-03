@@ -1,0 +1,8 @@
+{
+  "customers": [
+    { "id": "CU1", "name": "Asha Rao", "tier": "Regular", "orders_placed": 0 },
+    { "id": "CU2", "name": "Ravi Kumar", "tier": "Silver", "orders_placed": 3 },
+    { "id": "CU42", "name": "Priya Sharma", "tier": "Gold", "orders_placed": 12 },
+    { "id": "CU7", "name": "Meera Iyer", "tier": "Platinum", "orders_placed": 25 }
+  ]
+}

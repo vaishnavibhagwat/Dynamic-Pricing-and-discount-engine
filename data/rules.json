@@ -1,0 +1,145 @@
+{
+  "rules": [
+    {
+      "id": "DIWALI_ELECTRONICS",
+      "type": "seasonal",
+      "name": "Diwali Dhamaka: 20% off Electronics",
+      "priority": 90,
+      "stackable": true,
+      "percent": 20,
+      "start": "2026-10-25",
+      "end": "2026-11-10",
+      "category": "Electronics"
+    },
+    {
+      "id": "EOSS_CLOTHING",
+      "type": "seasonal",
+      "name": "End of Season Sale: 30% off Clothing",
+      "priority": 85,
+      "stackable": true,
+      "percent": 30,
+      "start": "2027-01-15",
+      "end": "2027-01-31",
+      "category": "Clothing"
+    },
+    {
+      "id": "FURNITURE_10",
+      "type": "percentage",
+      "name": "Griha Pravesh Offer: 10% off Furniture",
+      "priority": 70,
+      "stackable": true,
+      "percent": 10,
+      "category": "Furniture"
+    },
+    {
+      "id": "BUY3_CLOTHING",
+      "type": "quantity",
+      "name": "Buy 3 or more of a kurta/shirt, get 15% off",
+      "priority": 75,
+      "stackable": true,
+      "min_quantity": 3,
+      "percent": 15,
+      "category": "Clothing"
+    },
+    {
+      "id": "GROCERY_EXPIRY",
+      "type": "expiry",
+      "name": "Fresh Saver: near-expiry grocery markdown",
+      "priority": 95,
+      "stackable": true,
+      "tiers": [
+        { "max_days_left": 1, "percent": 50 },
+        { "max_days_left": 3, "percent": 30 },
+        { "max_days_left": 7, "percent": 15 }
+      ]
+    },
+    {
+      "id": "LOYALTY_TIERS",
+      "type": "membership",
+      "name": "Loyalty Club member discount",
+      "priority": 60,
+      "stackable": true,
+      "tiers": { "Silver": 2, "Gold": 5, "Platinum": 10 }
+    },
+    {
+      "id": "COUPON_FESTIVE500",
+      "type": "coupon",
+      "name": "FESTIVE500: Flat Rs 500 off on Rs 2,999+",
+      "priority": 50,
+      "stackable": true,
+      "code": "FESTIVE500",
+      "min_cart_value": 2999,
+      "usage_limit": 1000,
+      "flat": 500
+    },
+    {
+      "id": "COUPON_NEWUSER15",
+      "type": "coupon",
+      "name": "NEWUSER15: 15% off up to Rs 300 on first order",
+      "priority": 50,
+      "stackable": false,
+      "code": "NEWUSER15",
+      "min_cart_value": 499,
+      "usage_limit": 1,
+      "percent": 15,
+      "cap": 300
+    },
+    {
+      "id": "HAPPY_HOUR_EARBUDS",
+      "type": "percentage",
+      "name": "Evening happy hour: 25% off Wireless Earbuds",
+      "priority": 65,
+      "stackable": true,
+      "percent": 25,
+      "product_ids": ["E2"],
+      "decorators": [
+        { "type": "happy_hour", "from": "18:00", "to": "21:00" },
+        { "type": "cap", "max": 300 }
+      ]
+    },
+    {
+      "id": "COUPON_WELCOME200",
+      "type": "coupon",
+      "name": "WELCOME200: Flat Rs 200 off on Rs 999+",
+      "priority": 50,
+      "stackable": true,
+      "code": "WELCOME200",
+      "min_cart_value": 999,
+      "usage_limit": 100000,
+      "flat": 200,
+      "decorators": [ { "type": "first_order" } ]
+    },
+    {
+      "id": "BANK_HDFC",
+      "type": "bank",
+      "name": "HDFC Bank cards: 10% instant discount up to Rs 1,500",
+      "priority": 40,
+      "stackable": true,
+      "bank": "HDFC",
+      "percent": 10,
+      "cap": 1500,
+      "min_transaction": 5000
+    },
+    {
+      "id": "BANK_SBI",
+      "type": "bank",
+      "name": "SBI Card: 5% instant discount up to Rs 1,000",
+      "priority": 40,
+      "stackable": true,
+      "bank": "SBI",
+      "percent": 5,
+      "cap": 1000,
+      "min_transaction": 3000
+    },
+    {
+      "id": "BANK_ICICI",
+      "type": "bank",
+      "name": "ICICI Bank UPI: 5% off up to Rs 750",
+      "priority": 40,
+      "stackable": true,
+      "bank": "ICICI",
+      "percent": 5,
+      "cap": 750
+    }
+  ]
+}

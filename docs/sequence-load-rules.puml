@@ -1,0 +1,60 @@
+@startuml sequence-load-rules
+' Start-up: loading the shop data and both rule sources.
+title Start-up / reload rules sequence
+
+skinparam shadowing false
+autonumber
+
+participant main
+participant CliApp
+participant StoreLoader
+participant CatalogLoader
+participant CustomerLoader
+participant JsonRecord
+participant RuleFactory
+participant "Repository<DiscountRule>" as Repo
+participant RuleScriptLoader
+participant RuleParser
+participant RuleLexer
+
+main -> CliApp ** : CliApp(cin, cout, AppConfig,\nstandardConflictPolicies())
+activate CliApp
+CliApp -> StoreLoader : loadCatalog()
+StoreLoader -> CatalogLoader : loadFile("catalog.json")
+CatalogLoader -> JsonRecord : readFile(path)
+CatalogLoader -> CatalogLoader : registry["electronics" | "grocery" | ...]\n-> make_unique<Product subclass>
+CatalogLoader --> StoreLoader : vector<unique_ptr<Product>>
+StoreLoader --> CliApp : Repository<Product>
+
+CliApp -> StoreLoader : loadCustomers()
+StoreLoader -> CustomerLoader : loadFile("customers.json")
+CustomerLoader --> StoreLoader : vector<Customer>
+StoreLoader --> CliApp : customers (throws ConfigError if empty)
+
+CliApp -> StoreLoader : loadRules()
+activate StoreLoader
+StoreLoader -> RuleFactory : loadFile("rules.json")
+RuleFactory -> JsonRecord : readFile(path)
+loop each JSON rule
+  RuleFactory -> RuleFactory : registry[type] -> Creator(RuleSpec)
+  RuleFactory -> Repo : add(unique_ptr<DiscountRule>)
+end
+RuleFactory --> StoreLoader : Repository<DiscountRule>
+
+StoreLoader -> RuleScriptLoader : loadInto("rules.txt", repo)
+RuleScriptLoader -> RuleParser : parseFile(path, FieldCatalog)
+RuleParser -> RuleLexer : tokens
+RuleLexer --> RuleParser : vector<Token>
+RuleParser -> RuleParser : build ConditionNode tree\n-> CompositeRule
+RuleParser --> RuleScriptLoader : vector<unique_ptr<DiscountRule>>
+RuleScriptLoader -> RuleScriptLoader : check ids are unique\n(all-or-nothing)
+RuleScriptLoader -> Repo : add(rule) for each
+StoreLoader --> CliApp : Repository<DiscountRule>
+deactivate StoreLoader
+
+alt bad file
+  JsonRecord --> CliApp : throws ConfigError
+  note over CliApp : on start-up the error stops the app;\non "9 Reload rules" the old rules are kept
+end
+deactivate CliApp
+@enduml

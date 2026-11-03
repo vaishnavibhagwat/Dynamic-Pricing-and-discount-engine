@@ -1,0 +1,47 @@
+@startuml sequence-upsell
+' Smart upsell suggestions (menu option 11).
+title Smart upsell sequence (menu option 11)
+
+skinparam shadowing false
+autonumber
+
+actor User
+participant CliApp
+participant UpsellAdvisor
+participant PricingEngine
+participant "Repository<DiscountRule>" as Rules
+participant UpsellPrinter
+
+User -> CliApp : 11 (Smart upsell suggestions)
+CliApp -> UpsellAdvisor : suggest(ctx, rules, policy(), catalog)
+activate UpsellAdvisor
+UpsellAdvisor -> PricingEngine ** : PricingEngine(resolver, guards())
+UpsellAdvisor -> PricingEngine : price(current cart)
+PricingEngine --> UpsellAdvisor : now
+
+loop each catalog product P
+  UpsellAdvisor -> UpsellAdvisor : bigger = cart + 1 x P\nalone = only 1 x P
+  UpsellAdvisor -> PricingEngine : price(bigger)
+  PricingEngine --> UpsellAdvisor : withIt
+  UpsellAdvisor -> PricingEngine : price(alone)
+  PricingEngine --> UpsellAdvisor : byItself
+  UpsellAdvisor -> UpsellAdvisor : extraCost = withIt - now\nbonus = byItself - extraCost
+  alt bonus > 0
+    UpsellAdvisor -> UpsellAdvisor : unlocked = offers in withIt\nbut not in now or byItself
+  else
+    UpsellAdvisor -> UpsellAdvisor : skip P
+  end
+end
+note over UpsellAdvisor, PricingEngine
+  Only prices are compared: no rule types or thresholds
+  are inspected, so every current and future offer,
+  decorator and text rule is understood (Open/Closed).
+  Nothing is recorded: coupon usage stays unchanged.
+end note
+
+UpsellAdvisor -> UpsellAdvisor : sort by bonus, keep top 3
+UpsellAdvisor --> CliApp : vector<UpsellSuggestion>
+deactivate UpsellAdvisor
+CliApp -> UpsellPrinter : print(out, suggestions, policy name)
+UpsellPrinter --> User : "Add 1 x Cotton Kurta ... you save ₹1,064 extra"
+@enduml

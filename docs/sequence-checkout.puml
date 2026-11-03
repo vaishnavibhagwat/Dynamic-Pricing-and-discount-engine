@@ -1,0 +1,82 @@
+@startuml sequence-checkout
+' Checkout: from the CLI menu to the printed invoice.
+title Checkout sequence (menu option 5)
+
+skinparam shadowing false
+autonumber
+
+actor User
+participant CliApp
+participant CheckoutService
+participant "GuardFactory" as Guards
+participant PricingEngine
+participant "ConflictResolver\n(Strategy)" as Resolver
+participant "DiscountRule\n(IItemLevelRule)" as ItemRule
+participant "PriceGuard" as Guard
+participant "DiscountRule\n(ICartLevelRule)" as CartRule
+participant TracePublisher
+participant "PriceTrace\n(TraceObserver)" as Trace
+participant GstCalculator
+participant "IRedeemable\n(e.g. CouponDiscount)" as Redeemable
+participant InvoicePrinter
+
+User -> CliApp : 5 (Checkout), pick policy
+CliApp -> CliApp : context() -> PricingContext\n(cart, customer, date, coupon, bank)
+CliApp -> CheckoutService : checkout(ctx, policy())
+activate CheckoutService
+CheckoutService -> Guards : guards_()
+Guards --> CheckoutService : vector<unique_ptr<PriceGuard>>
+CheckoutService -> PricingEngine ** : PricingEngine(resolver, guards)
+CheckoutService -> PricingEngine : price(ctx, rules)
+activate PricingEngine
+PricingEngine -> PricingEngine : sort rules by stage,\nsplit item / cart rules
+PricingEngine -> TracePublisher : subscribe(PriceTrace)
+
+group 1. Item offers (per cart line)
+  loop each item rule, each line
+    PricingEngine -> ItemRule : isApplicable(ctx)
+    PricingEngine -> ItemRule : appliesToItem(item, ctx)
+    PricingEngine -> ItemRule : discountForItem(item, ctx)
+    ItemRule --> PricingEngine : Money
+  end
+  PricingEngine -> Resolver : resolve(candidates)
+  Resolver --> PricingEngine : vector<Verdict>
+  PricingEngine -> TracePublisher : publish(applied / rejected + reason)
+  TracePublisher -> Trace : onDecision(entry)
+end
+
+group 2. Guards (per line)
+  loop each guard
+    PricingEngine -> Guard : limit(item, proposedDiscount)
+    Guard --> PricingEngine : GuardOutcome
+    PricingEngine -> TracePublisher : publish(passed / adjusted)
+  end
+end
+
+group 3. Order offers (coupon, bank)
+  PricingEngine -> CartRule : isApplicable(ctx)
+  PricingEngine -> CartRule : discountOnAmount(amount, ctx)
+  PricingEngine -> Resolver : resolve(candidates)
+  PricingEngine -> TracePublisher : publish(applied / rejected + reason)
+end
+
+group 4-5. Split order offers over lines, then GST
+  loop each line
+    PricingEngine -> GstCalculator : gstOn(taxable, product)
+    note right : uses virtual Product::gstRate()
+  end
+end
+
+PricingEngine --> CheckoutService : PricingResult (lines, totals, trace)
+deactivate PricingEngine
+
+loop each offer actually applied
+  CheckoutService -> Redeemable : recordUse()
+  note right : only offers implementing IRedeemable\n(one-time coupons) are counted
+end
+CheckoutService --> CliApp : PricingResult
+deactivate CheckoutService
+
+CliApp -> InvoicePrinter : print(out, ctx, result)
+InvoicePrinter --> User : GST invoice
+@enduml

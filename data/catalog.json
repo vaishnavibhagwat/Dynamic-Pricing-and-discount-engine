@@ -1,0 +1,20 @@
+{
+  "products": [
+    { "id": "E1", "type": "electronics", "name": "Smartphone",
+      "cost": 12000, "price": 15000, "mrp": 18000 },
+    { "id": "E2", "type": "electronics", "name": "Wireless Earbuds",
+      "cost": 900, "price": 1499, "mrp": 1999 },
+    { "id": "C1", "type": "clothing", "name": "Cotton Kurta",
+      "cost": 400, "price": 1000, "mrp": 1200, "size": "M", "season": "AllSeason" },
+    { "id": "C2", "type": "clothing", "name": "Denim Jeans",
+      "cost": 700, "price": 1599, "mrp": 1999, "size": "L", "season": "AllSeason" },
+    { "id": "F1", "type": "furniture", "name": "Study Chair",
+      "cost": 2000, "price": 4000, "mrp": 5000, "assembly_required": true },
+    { "id": "F2", "type": "furniture", "name": "Bookshelf",
+      "cost": 3500, "price": 6499, "mrp": 7999, "assembly_required": true },
+    { "id": "G1", "type": "grocery", "name": "Toned Milk 1L",
+      "cost": 40, "price": 60, "mrp": 65, "expiry": "2026-11-01" },
+    { "id": "G2", "type": "grocery", "name": "Basmati Rice 5kg",
+      "cost": 450, "price": 599, "mrp": 699, "expiry": "2027-06-30" }
+  ]
+}

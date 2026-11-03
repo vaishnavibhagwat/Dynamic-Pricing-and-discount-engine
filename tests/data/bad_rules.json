@@ -1,0 +1,107 @@
+{
+  "_comment": "Deliberately broken rule set for test_rule_validator.cpp. Every rule loads without error; the problems only show when the rules are checked together against the test catalog (phone E1, kurta C1, chair F1, milk G1) as of 2026-10-28.",
+  "rules": [
+    {
+      "_problem": "Expired: ended in July 2026",
+      "id": "EXPIRED_MONSOON",
+      "type": "seasonal",
+      "name": "Monsoon Sale: 10% off Clothing",
+      "priority": 80,
+      "percent": 10,
+      "start": "2026-07-01",
+      "end": "2026-07-31",
+      "category": "Clothing"
+    },
+    {
+      "_problem": "NeverApplies: category is misspelt, so no product matches",
+      "id": "TYPO_CATEGORY",
+      "type": "percentage",
+      "name": "10% off Electornics",
+      "priority": 70,
+      "percent": 10,
+      "category": "Electornics"
+    },
+    {
+      "_problem": "NeverApplies: product X999 is not in the catalog",
+      "id": "GHOST_PRODUCT",
+      "type": "quantity",
+      "name": "Buy 2 ghost items, get 5% off",
+      "priority": 70,
+      "min_quantity": 2,
+      "percent": 5,
+      "product_ids": ["X999"]
+    },
+    {
+      "_problem": "NeverApplies: E1 is a phone, not Furniture, so category and product list contradict",
+      "id": "CONTRADICTORY_FILTER",
+      "type": "percentage",
+      "name": "5% off Furniture item E1",
+      "priority": 70,
+      "percent": 5,
+      "category": "Furniture",
+      "product_ids": ["E1"]
+    },
+    {
+      "_problem": "Overlap with FURNITURE_CLEARANCE from 2026-11-10 to 2026-11-20",
+      "id": "FURNITURE_FEST",
+      "type": "seasonal",
+      "name": "Furniture Fest: 15% off",
+      "priority": 75,
+      "percent": 15,
+      "start": "2026-10-20",
+      "end": "2026-11-20",
+      "category": "Furniture"
+    },
+    {
+      "_problem": "Overlap with FURNITURE_FEST from 2026-11-10 to 2026-11-20",
+      "id": "FURNITURE_CLEARANCE",
+      "type": "seasonal",
+      "name": "Furniture Clearance: 12% off",
+      "priority": 74,
+      "percent": 12,
+      "start": "2026-11-10",
+      "end": "2026-12-10",
+      "category": "Furniture"
+    },
+    {
+      "_problem": "None (control): same category but its dates touch no other Furniture offer",
+      "id": "FURNITURE_NEWYEAR",
+      "type": "seasonal",
+      "name": "New Year: 5% off Furniture",
+      "priority": 73,
+      "percent": 5,
+      "start": "2027-01-01",
+      "end": "2027-01-10",
+      "category": "Furniture"
+    },
+    {
+      "_problem": "MarginBreach with VIP_TIERS on E1: 10% + 5% = 15%, but cost + 8% only leaves room for 13.6%",
+      "id": "ELECTRONICS_MEGA",
+      "type": "percentage",
+      "name": "Mega Electronics Days: 10% off",
+      "priority": 65,
+      "stackable": true,
+      "percent": 10,
+      "category": "Electronics"
+    },
+    {
+      "_problem": "MarginBreach with ELECTRONICS_MEGA on E1 (Platinum 5%)",
+      "id": "VIP_TIERS",
+      "type": "membership",
+      "name": "VIP member discount",
+      "priority": 60,
+      "stackable": true,
+      "tiers": { "Gold": 3, "Platinum": 5 }
+    },
+    {
+      "_problem": "None (control): 13% alone fits the margin and it is not stackable, so it must not be added to the E1 stack",
+      "id": "PHONE_FLASH",
+      "type": "percentage",
+      "name": "Flash deal: 13% off the phone",
+      "priority": 95,
+      "stackable": false,
+      "percent": 13,
+      "product_ids": ["E1"]
+    }
+  ]
+}

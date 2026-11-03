@@ -1,0 +1,348 @@
+@startuml class-diagram
+' Dynamic Pricing & Discount Rule Engine - class diagram.
+' Render: plantuml docs/class-diagram.puml  (or the PlantUML VS Code extension)
+title Dynamic Pricing & Discount Rule Engine - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+hide empty members
+left to right direction
+
+package "Presentation" {
+  class CliApp {
+    +CliApp(in, out, AppConfig, ConflictPolicies)
+    +run() : int
+    +policy() : const ConflictResolver&
+  }
+  class InvoicePrinter
+  class ConflictReportPrinter
+  class WhatIfPrinter
+  class OptimizationPrinter
+  class UpsellPrinter
+  class StreamTraceObserver
+}
+
+package "Application" {
+  class StoreLoader {
+    +loadCatalog() : Repository<Product>
+    +loadCustomers() : vector<Customer>
+    +loadRules() : Repository<DiscountRule>
+  }
+  class CheckoutService {
+    +quote(ctx, resolver) : PricingResult
+    +checkout(ctx, resolver) : PricingResult
+    +checkout(ctx, resolver, Customer&) : PricingResult
+  }
+  class WhatIfSimulator {
+    +run(ctx, rules) : WhatIfReport
+  }
+  class DiscountOptimizer {
+    +optimize(ctx, rules) : OptimizationResult
+  }
+  class UpsellAdvisor {
+    +suggest(ctx, rules, resolver, catalog) : vector<UpsellSuggestion>
+  }
+  class UpsellSuggestion <<struct>> {
+    +extraCost : Money
+    +standaloneCost : Money
+    +bonus : Money
+    +unlockedOffers : vector<string>
+  }
+  class "standardConflictPolicies()" as Policies <<function>>
+  class "GuardFactory" as GuardFactory <<std::function>>
+}
+
+package "Rule validation" {
+  class RuleValidator {
+    +validate(rules, catalog, date) : ConflictReport
+  }
+  abstract class RuleCheck {
+    +{abstract} name() : string
+    +{abstract} check(ValidationContext) : vector<RuleIssue>
+  }
+  class ExpiredRuleCheck
+  class UnreachableRuleCheck
+  class OverlapCheck
+  class MarginStackCheck
+  class ConflictReport
+}
+
+package "Engine" {
+  class PricingEngine {
+    +price(ctx, rules) : PricingResult
+    +subscribe(TraceObserver&)
+    +{static} defaultGuards()
+  }
+  interface ConflictResolver {
+    +{abstract} name() : string
+    +{abstract} resolve(candidates) : vector<Verdict>
+  }
+  class StackingResolver
+  class BestDiscountResolver
+  class PriorityResolver
+  interface PriceGuard {
+    +{abstract} name() : string
+    +{abstract} limit(item, proposed) : GuardOutcome
+  }
+  class DiscountCapPolicy
+  class MarginGuard
+  class MrpCeilingPolicy
+  interface TraceObserver {
+    +{abstract} onDecision(TraceEntry)
+  }
+  class TracePublisher
+  class PriceTrace
+  class TraceEntry
+  class GstCalculator
+  class PricingResult
+}
+
+package "Rules" {
+  abstract class DiscountRule {
+    +isApplicable(ctx) : bool
+    +calculateDiscount(ctx) : Money
+    +name() : string
+    +priority() : int
+    +stackable() : bool
+    +{abstract} stage() : RuleStage
+    +rejectionReason(ctx) : string
+  }
+  interface IItemLevelRule {
+    +{abstract} appliesToItem(item, ctx) : bool
+    +{abstract} discountForItem(item, ctx) : Money
+  }
+  interface ICartLevelRule {
+    +{abstract} discountOnAmount(amount, ctx) : Money
+  }
+  interface IRedeemable {
+    +{abstract} recordUse()
+  }
+  abstract class ItemLevelRule
+  abstract class CartLevelRule
+  class PercentageDiscount
+  class QuantityDiscount
+  class SeasonalDiscount
+  class ExpiryMarkdown
+  class CompositeRule
+  class MembershipDiscount
+  class CouponDiscount
+  class BankOfferDiscount
+  class ItemFilter
+  abstract class RuleDecorator {
+    -inner_ : unique_ptr<DiscountRule>
+    +inner() : const DiscountRule&
+    #allows(ctx) : bool
+    #blockedReason(ctx) : string
+    #limit(Money) : Money
+  }
+  class CappedRule
+  class HappyHourRule
+  class FirstOrderRule
+  class "Repository<T>" as Repository {
+    +add(unique_ptr<T>)
+    +findById(id) : T*
+    +all() : vector<const T*>
+  }
+  class RuleFactory {
+    +create(json) : unique_ptr<DiscountRule>
+    +loadFile(path) : Repository<DiscountRule>
+  }
+  abstract class ConditionNode {
+    +{abstract} evaluate(item, ctx) : bool
+  }
+  abstract class BinaryNode
+  class AndNode
+  class OrNode
+  class NotNode
+  class ComparisonNode
+}
+
+package "Rule language" {
+  class RuleScriptLoader
+  class RuleParser
+  class RuleLexer
+  class Token
+}
+
+package "Domain" {
+  abstract class Product {
+    +{abstract} gstRate() : int
+    +{abstract} category() : string
+    +margin() : Money
+  }
+  interface Perishable {
+    +{abstract} expiryDate() : Date
+    +isExpiredOn(Date) : bool
+  }
+  class Electronics
+  class Clothing
+  class Furniture
+  class Grocery
+  class Cart
+  class CartItem
+  class Customer {
+    +ordersPlaced() : int
+    +recordOrder()
+  }
+  class PricingContext
+  class Money <<value>> {
+    -paise_ : int64
+  }
+  class Date <<value>>
+  class TimeOfDay <<value>>
+  class DateRange <<value>>
+}
+
+package "Infrastructure" {
+  class CatalogLoader
+  class CustomerLoader
+  class JsonRecord
+  class Logger {
+    +addSink(unique_ptr<LogSink>)
+    +info(msg) / warning(msg) / error(msg)
+  }
+  interface LogSink {
+    +{abstract} write(LogLevel, msg)
+  }
+  class StreamLogSink
+  class FileLogSink
+  class PricingError
+  class ConfigError
+  class RuleParseException
+}
+
+' ---------------- inheritance (is-a)
+Product <|-- Electronics
+Product <|-- Clothing
+Product <|-- Furniture
+Product <|-- Grocery
+Perishable <|.. Grocery
+
+DiscountRule <|-- ItemLevelRule
+DiscountRule <|-- CartLevelRule
+IItemLevelRule <|.. ItemLevelRule
+ICartLevelRule <|.. CartLevelRule
+ItemLevelRule <|-- PercentageDiscount
+ItemLevelRule <|-- QuantityDiscount
+ItemLevelRule <|-- SeasonalDiscount
+ItemLevelRule <|-- ExpiryMarkdown
+ItemLevelRule <|-- CompositeRule
+CartLevelRule <|-- MembershipDiscount
+IItemLevelRule <|.. MembershipDiscount
+CartLevelRule <|-- CouponDiscount
+IRedeemable <|.. CouponDiscount
+CartLevelRule <|-- BankOfferDiscount
+
+' Decorator pattern: is-a DiscountRule AND has-a DiscountRule
+DiscountRule <|-- RuleDecorator
+IItemLevelRule <|.. RuleDecorator
+ICartLevelRule <|.. RuleDecorator
+IRedeemable <|.. RuleDecorator
+RuleDecorator o-- "1" DiscountRule : wraps (unique_ptr)
+RuleDecorator <|-- CappedRule
+RuleDecorator <|-- HappyHourRule
+RuleDecorator <|-- FirstOrderRule
+HappyHourRule ..> TimeOfDay
+FirstOrderRule ..> Customer : ordersPlaced()
+RuleFactory ..> RuleDecorator : wraps via\ndecorator registry
+
+ConditionNode <|-- BinaryNode
+BinaryNode <|-- AndNode
+BinaryNode <|-- OrNode
+ConditionNode <|-- NotNode
+ConditionNode <|-- ComparisonNode
+
+ConflictResolver <|.. StackingResolver
+ConflictResolver <|.. BestDiscountResolver
+ConflictResolver <|.. PriorityResolver
+PriceGuard <|.. DiscountCapPolicy
+PriceGuard <|.. MarginGuard
+PriceGuard <|.. MrpCeilingPolicy
+TraceObserver <|.. PriceTrace
+TraceObserver <|.. StreamTraceObserver
+
+RuleCheck <|-- ExpiredRuleCheck
+RuleCheck <|-- UnreachableRuleCheck
+RuleCheck <|-- OverlapCheck
+RuleCheck <|-- MarginStackCheck
+
+PricingError <|-- ConfigError
+LogSink <|.. StreamLogSink
+LogSink <|.. FileLogSink
+Logger *-- "0..*" LogSink : unique_ptr
+FileLogSink *-- StreamLogSink : formats lines
+CliApp *-- Logger : injected, silent by default
+ConfigError <|-- RuleParseException
+
+' ---------------- ownership / use
+CliApp *-- StoreLoader
+CliApp *-- CheckoutService
+CliApp *-- "1..*" ConflictResolver : owns (unique_ptr)
+CliApp *-- Cart
+CliApp ..> WhatIfSimulator
+CliApp ..> DiscountOptimizer
+CliApp ..> RuleValidator
+CliApp ..> InvoicePrinter
+CliApp ..> UpsellAdvisor
+CliApp ..> UpsellPrinter
+UpsellAdvisor ..> PricingEngine : prices 3 carts\nper candidate
+UpsellAdvisor ..> UpsellSuggestion : returns
+UpsellAdvisor o-- GuardFactory
+UpsellPrinter ..> UpsellSuggestion
+CliApp ..> Policies
+
+StoreLoader ..> CatalogLoader
+StoreLoader ..> CustomerLoader
+StoreLoader ..> RuleFactory
+StoreLoader ..> RuleScriptLoader
+
+CheckoutService o-- Repository : rules (reference)
+CheckoutService o-- GuardFactory
+CheckoutService ..> PricingEngine : creates per call
+CheckoutService ..> IRedeemable : recordUse()
+WhatIfSimulator o-- "1..*" ConflictResolver : non-owning
+WhatIfSimulator ..> PricingEngine
+DiscountOptimizer ..> PricingEngine
+
+RuleValidator *-- "1..*" RuleCheck
+RuleValidator ..> ConflictReport
+
+PricingEngine o-- ConflictResolver : Strategy (reference)
+PricingEngine *-- "0..*" PriceGuard : unique_ptr
+PricingEngine *-- TracePublisher
+PricingEngine *-- GstCalculator
+PricingEngine ..> DiscountRule
+PricingEngine ..> PricingResult : returns
+TracePublisher o-- "0..*" TraceObserver : non-owning
+PricingResult *-- PriceTrace
+PriceTrace *-- "0..*" TraceEntry
+
+Repository *-- "0..*" DiscountRule : unique_ptr
+RuleFactory ..> Repository : builds
+RuleFactory ..> DiscountRule : creates
+RuleScriptLoader ..> RuleParser
+RuleParser ..> RuleLexer
+RuleLexer ..> Token
+RuleParser ..> CompositeRule : creates
+CompositeRule *-- ConditionNode : unique_ptr
+BinaryNode *-- "2" ConditionNode
+NotNode *-- ConditionNode
+PercentageDiscount *-- ItemFilter : composition
+QuantityDiscount *-- ItemFilter
+SeasonalDiscount *-- ItemFilter
+ExpiryMarkdown ..> Perishable
+
+PricingContext o-- Cart
+PricingContext o-- Customer
+PricingContext *-- Date
+PricingContext *-- "0..1" TimeOfDay : orderTime
+Cart *-- "0..*" CartItem
+CartItem o-- Product : non-owning
+Product *-- Money
+DateRange *-- "2" Date
+
+CatalogLoader ..> JsonRecord
+CustomerLoader ..> JsonRecord
+CatalogLoader ..> Product : creates
+@enduml
