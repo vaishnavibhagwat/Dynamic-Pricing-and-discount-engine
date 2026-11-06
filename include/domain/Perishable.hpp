@@ -4,6 +4,8 @@
 
 namespace domain {
 
+class Product;
+
 /**
  * @brief Capability interface for anything that goes off on a known date.
  *
@@ -28,5 +30,13 @@ protected:
     Perishable(const Perishable&) = default;
     Perishable& operator=(const Perishable&) = default;
 };
+
+/// The Perishable side of @p product, or nullptr if it never expires.
+/// The one place that asks a Product for this capability.
+const Perishable* asPerishable(const Product& product) noexcept;
+
+/// True if @p product is perishable and already past its expiry date on @p day,
+/// so it must not be sold.
+bool isExpiredOn(const Product& product, const Date& day) noexcept;
 
 } // namespace domain

@@ -15,7 +15,10 @@ namespace domain {
  */
 class CartItem {
 public:
-    /// @throws std::invalid_argument if quantity < 1.
+    /// Most units one cart line may hold. Keeps totals far from integer overflow.
+    static constexpr int kMaxQuantity = 1000;
+
+    /// @throws std::invalid_argument unless 1 <= quantity <= kMaxQuantity.
     CartItem(const Product& product, int quantity);
 
     const Product& product() const noexcept { return *product_; }
@@ -26,7 +29,8 @@ public:
     /// mrp x quantity
     Money mrpTotal() const noexcept { return product_->mrp() * quantity_; }
 
-    /// Adds more units of the same product. @throws std::invalid_argument if extra < 1.
+    /// Adds more units of the same product. Leaves the item unchanged on error.
+    /// @throws std::invalid_argument if extra < 1 or the total would pass kMaxQuantity.
     void increaseQuantity(int extra);
 
 private:

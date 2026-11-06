@@ -47,7 +47,7 @@ public:
                            std::size_t maxSuggestions = 3);
 
     /// Best suggestions first (largest bonus, then smallest extra cost).
-    /// Only products with a positive bonus are returned.
+    /// Only products with a positive bonus are returned; expired items are skipped.
     std::vector<UpsellSuggestion> suggest(const domain::PricingContext& ctx,
                                           const rules::Repository<rules::DiscountRule>& rules,
                                           const engine::ConflictResolver& resolver,

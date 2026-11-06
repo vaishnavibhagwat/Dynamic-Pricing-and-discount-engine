@@ -8,4 +8,4 @@
 IF category == Electronics AND tier >= GOLD AND qty >= 2 THEN 12% OFF PRIORITY 3
 RULE KURTA_BULK: IF category == Clothing AND qty >= 3 AND NOT tier == REGULAR THEN 5% OFF PRIORITY 20
 RULE BIG_BASKET: IF (category == Furniture OR category == Electronics) AND cart_total >= 20000 THEN 3% OFF PRIORITY 10 NAME "Big basket bonus"
-RULE DIWALI_GROCERY: IF category == Grocery AND date >= 2026-10-25 AND date <= 2026-11-10 THEN 5% OFF PRIORITY 15
+RULE FESTIVE_GROCERY: IF category == Grocery AND date >= 2026-10-25 AND date <= 2027-01-10 THEN 5% OFF PRIORITY 15

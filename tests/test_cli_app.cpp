@@ -116,7 +116,7 @@ TEST(CliApp, BuildCartAddsRemovesAndValidates) {
     app.run();
     const std::string text = out.str();
     EXPECT_TRUE(has(text, "Added 2 x Smartphone."));
-    EXPECT_TRUE(has(text, "Quantity must be a whole number of at least 1."));
+    EXPECT_TRUE(has(text, "Quantity must be a whole number from 1 to 1000."));
     EXPECT_TRUE(has(text, "No product with id \"NOPE\""));
     EXPECT_TRUE(has(text, "Removed."));
     EXPECT_TRUE(app.cart().empty());
@@ -321,4 +321,29 @@ TEST(CliApp, LogsAFailedReloadAsAWarning) {
 TEST(CliApp, IsSilentWithoutALogger) {
     // The default logger has no sinks; the session must still run normally.
     EXPECT_TRUE(has(session("0\n"), "Goodbye."));
+}
+
+TEST(CliApp, RejectsHugeQuantitiesWithoutOverflow) {
+    // Two big adds used to overflow int and give a negative bill.
+    std::istringstream in("2\na\nE1\n2000000000\na\nE1\n600\na\nE1\n600\nb\n0\n");
+    std::ostringstream out;
+    CliApp app(in, out, projectData());
+    app.run();
+    const std::string text = out.str();
+    EXPECT_TRUE(has(text, "Quantity must be a whole number from 1 to 1000.")) << text;
+    EXPECT_TRUE(has(text, "Not added: A cart line can hold at most 1000 units."));
+    ASSERT_EQ(app.cart().items().size(), 1u);
+    EXPECT_EQ(app.cart().items()[0].quantity(), 600);
+}
+
+TEST(CliApp, ExpiredProductsAreMarkedAndCannotBeSold) {
+    // Toned Milk (G1) expires on 2026-11-01; the shop is open on 2026-11-03.
+    std::istringstream in("1\n2\na\nG1\n1\nb\n0\n");
+    std::ostringstream out;
+    CliApp app(in, out, AppConfig{DATA_DIR, domain::Date(2026, 11, 3)});
+    app.run();
+    const std::string text = out.str();
+    EXPECT_TRUE(has(text, "EXPIRED")) << text;
+    EXPECT_TRUE(has(text, "Toned Milk 1L expired on 2026-11-01 and cannot be sold."));
+    EXPECT_TRUE(app.cart().empty());
 }

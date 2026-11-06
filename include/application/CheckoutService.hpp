@@ -37,6 +37,8 @@ public:
                                 const engine::ConflictResolver& resolver) const;
 
     /// Prices the order, then records one use of each applied IRedeemable offer.
+    /// @throws infrastructure::PricingError if the cart holds an item that has
+    ///         expired by the order date (it must not be sold); nothing is recorded.
     engine::PricingResult checkout(const domain::PricingContext& ctx,
                                    const engine::ConflictResolver& resolver);
     /// As above, and also counts the order on @p buyer's history (so

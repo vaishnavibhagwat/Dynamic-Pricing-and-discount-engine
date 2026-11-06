@@ -14,10 +14,23 @@ endif()
 
 include(FetchContent)
 
+# Downloaded archives get the extraction time as their timestamp (CMake 3.24+).
+# Set as a policy rather than a FetchContent keyword so CMake 3.20-3.23 still works.
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
+# Strict warnings for our own code, in the right syntax for each compiler.
+# /utf-8 makes MSVC read the source (which contains ₹) as UTF-8.
+if(MSVC)
+    set(PRICING_WARNINGS /W4 /permissive- /utf-8)
+else()
+    set(PRICING_WARNINGS -Wall -Wextra -Wpedantic)
+endif()
+
 FetchContent_Declare(
     json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -25,8 +38,9 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
+# Use the same C runtime as our code on MSVC (harmless elsewhere).
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(json googletest)
 
@@ -37,6 +51,7 @@ add_library(pricing_core STATIC
     src/domain/TimeOfDay.cpp
     src/domain/Product.cpp
     src/domain/Clothing.cpp
+    src/domain/Perishable.cpp
     src/domain/Customer.cpp
     src/domain/CartItem.cpp
     src/domain/Cart.cpp
@@ -107,12 +122,12 @@ add_library(pricing_core STATIC
 )
 target_include_directories(pricing_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(pricing_core PUBLIC nlohmann_json::nlohmann_json)
-target_compile_options(pricing_core PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(pricing_core PRIVATE ${PRICING_WARNINGS})
 
 add_executable(pricing_engine src/main.cpp)
 target_link_libraries(pricing_engine PRIVATE pricing_core)
 target_compile_definitions(pricing_engine PRIVATE DATA_DIR="${PROJECT_SOURCE_DIR}/data")
-target_compile_options(pricing_engine PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(pricing_engine PRIVATE ${PRICING_WARNINGS})
 
 enable_testing()
 add_subdirectory(tests)

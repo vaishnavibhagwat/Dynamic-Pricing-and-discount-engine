@@ -257,15 +257,15 @@ TEST(RuleFactory, LoadsSampleRulesJson) {
     const auto repo = RuleFactory().loadFile(std::string(DATA_DIR) + "/rules.json");
     EXPECT_EQ(repo.size(), 13u);
     ASSERT_NE(repo.findById("BANK_HDFC"), nullptr);
-    ASSERT_NE(repo.findById("DIWALI_ELECTRONICS"), nullptr);
+    ASSERT_NE(repo.findById("FESTIVE_ELECTRONICS"), nullptr);
 
     // HDFC 10% up to Rs 1500 behaves as advertised on a big order.
     Order o;
     o.cart += domain::CartItem(phone(), 2);  // 30000
     o.bank = "HDFC";
     EXPECT_EQ(repo.findById("BANK_HDFC")->calculateDiscount(o.context()), rs(1500));
-    // Diwali sale is live on 2026-10-28: 20% of 30000.
-    EXPECT_EQ(repo.findById("DIWALI_ELECTRONICS")->calculateDiscount(o.context()), rs(6000));
+    // Festive sale is live on 2026-10-28: 20% of 30000.
+    EXPECT_EQ(repo.findById("FESTIVE_ELECTRONICS")->calculateDiscount(o.context()), rs(6000));
 }
 
 TEST(RuleFactory, RegistersBuiltInDecorators) {

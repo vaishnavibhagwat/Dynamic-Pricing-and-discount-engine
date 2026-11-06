@@ -6,7 +6,10 @@
 #include <utility>
 #include <vector>
 
+#include "domain/Cart.hpp"
+#include "domain/Perishable.hpp"
 #include "engine/PricingEngine.hpp"
+#include "infrastructure/Exceptions.hpp"
 #include "rules/IRedeemable.hpp"
 
 namespace application {
@@ -25,6 +28,14 @@ engine::PricingResult CheckoutService::quote(const domain::PricingContext& ctx,
 
 engine::PricingResult CheckoutService::checkout(const domain::PricingContext& ctx,
                                                 const engine::ConflictResolver& resolver) {
+    for (const auto& item : ctx.cart().items()) {
+        if (const domain::Perishable* p = domain::asPerishable(item.product());
+            p != nullptr && p->isExpiredOn(ctx.orderDate())) {
+            throw infrastructure::PricingError(
+                "cannot sell " + item.product().name() + " [" + item.product().id() +
+                "]: it expired on " + p->expiryDate().toString());
+        }
+    }
     engine::PricingResult result = quote(ctx, resolver);
 
     // Each offer that was given counts once per order, even if it covered several lines.

@@ -25,7 +25,9 @@ TEST(ConflictReportPrinter, PrintsOneLinePerIssue) {
     EXPECT_EQ(out.str(),
               "Rule check (as of 2026-10-28): 2 problems\n"
               "  [Overlap]      A, B: both cover Furniture at all times\n"
-              "  [MarginBreach] E1: too much\n");
+              "  [MarginBreach] E1: too much\n"
+              "  Note: a MarginBreach is the worst case if every listed offer stacks.\n"
+              "        At checkout MarginGuard still keeps each line above cost + 8%.\n");
 }
 
 TEST(ConflictReportPrinter, SingularForOneProblem) {

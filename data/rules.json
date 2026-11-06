@@ -1,14 +1,14 @@
 {
   "rules": [
     {
-      "id": "DIWALI_ELECTRONICS",
+      "id": "FESTIVE_ELECTRONICS",
       "type": "seasonal",
-      "name": "Diwali Dhamaka: 20% off Electronics",
+      "name": "Festive Season Sale: 20% off Electronics",
       "priority": 90,
       "stackable": true,
       "percent": 20,
       "start": "2026-10-25",
-      "end": "2026-11-10",
+      "end": "2027-01-10",
       "category": "Electronics"
     },
     {

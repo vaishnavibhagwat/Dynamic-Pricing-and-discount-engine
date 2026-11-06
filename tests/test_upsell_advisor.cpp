@@ -110,3 +110,17 @@ TEST(UpsellAdvisor, RejectsBadSetup) {
     EXPECT_THROW(advisor().suggest(o.context(), couponOnly(), kStacking, {nullptr}),
                  std::invalid_argument);
 }
+
+TEST(UpsellAdvisor, NeverSuggestsExpiredOrFullItems) {
+    Order o;
+    o.cart += domain::CartItem(kurta(), domain::CartItem::kMaxQuantity); // line is full
+    o.coupon = "SAVE";
+    const auto stale = makeMilk("G9", -1);
+    const std::vector<const domain::Product*> candidates{&kurta(), &stale};
+    rules::Repository<rules::DiscountRule> repo;
+    repo.add(std::make_unique<rules::QuantityDiscount>("BUY3", "Buy 3 get 15%", 1, true, 3, 15));
+    for (const auto& s : advisor().suggest(o.context(), repo, kStacking, candidates)) {
+        EXPECT_NE(s.product, &kurta());
+        EXPECT_NE(s.product, &stale);
+    }
+}

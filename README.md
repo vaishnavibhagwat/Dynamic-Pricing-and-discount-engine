@@ -93,7 +93,8 @@ so coupon usage is never touched.
 
 | Tool | Version |
 |------|---------|
-| C++ compiler | C++17 (GCC 9+, Clang 10+, or MSVC 2019+) |
+| C++ compiler | Any C++17 compiler. Tested with GCC 16 (MSYS2 UCRT64) on Windows 11 |
+| Ninja | Windows only; comes with MSYS2 (`pacman -S mingw-w64-ucrt-x86_64-ninja`) |
 | CMake | 3.20 or newer |
 | Internet on first configure | CMake downloads nlohmann/json 3.11.3 and GoogleTest 1.15.2 |
 | Doxygen (optional) | for the API docs; Graphviz is optional for nicer graphs |
@@ -104,8 +105,11 @@ No other libraries are used.
 ## Build, test and run
 
 ```sh
-# configure + build
-cmake -S . -B build
+# configure
+cmake -S . -B build -G Ninja      # Windows (MSYS2 g++)
+cmake -S . -B build               # Linux / macOS
+
+# build
 cmake --build build
 
 # run all unit tests (GoogleTest, via CTest)
@@ -124,13 +128,17 @@ A session log looks like this:
 
 ```
 [INFO] Loaded 8 products, 4 customers and 17 rules from .../data
-[INFO] Order placed by CU1 (Asha Rao), policy Stacking: 1 line, total ₹15,292.80, offers: DIWALI_ELECTRONICS
+[INFO] Order placed by CU1 (Asha Rao), policy Stacking: 1 line, total ₹15,292.80, offers: FESTIVE_ELECTRONICS
 [INFO] Reloaded 17 rules
 [INFO] Session ended
 ```
 
 By default the app uses today's date and the current time. `--time` is handy
 for demonstrating happy-hour offers at any hour.
+
+On Windows, `-G Ninja` is needed on the first configure. Without it CMake
+looks for Visual Studio's build tools and stops with "CMAKE_CXX_COMPILER not
+set". VS Code's CMake Tools extension picks Ninja automatically.
 
 On Windows with MSYS2 / MinGW, the build links the C++ runtime statically,
 so the `.exe` works from any terminal. Without this, Git Bash's own older
@@ -304,7 +312,7 @@ Every class also has a Doxygen comment naming the OOP/SOLID idea it shows
 
 ## Tests
 
-GoogleTest, one test file per class (`tests/test_<class>.cpp`), 476 tests,
+GoogleTest, one test file per class or small class family (`tests/test_<class>.cpp`), 486 tests,
 including scripted end-to-end CLI sessions. Shared builders live in
 [tests/test_rule_fixtures.hpp](tests/test_rule_fixtures.hpp).
 

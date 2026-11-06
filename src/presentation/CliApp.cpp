@@ -13,6 +13,7 @@
 #include "application/DiscountOptimizer.hpp"
 #include "application/UpsellAdvisor.hpp"
 #include "application/WhatIfSimulator.hpp"
+#include "domain/Perishable.hpp"
 #include "infrastructure/Exceptions.hpp"
 #include "presentation/ConflictReportPrinter.hpp"
 #include "presentation/InvoicePrinter.hpp"
@@ -173,9 +174,10 @@ void CliApp::viewCatalog() {
     for (const auto* p : productList()) {
         out_ << padRight(p->id(), 5) << padRight(p->category(), 13) << padRight(p->name(), 20)
              << padLeft(p->sellingPrice().toString(), 12) << padLeft(p->mrp().toString(), 12)
-             << padLeft(std::to_string(p->gstRate()) + "%", 6) << '\n';
+             << padLeft(std::to_string(p->gstRate()) + "%", 6)
+             << (domain::isExpiredOn(*p, config_.orderDate) ? "  EXPIRED" : "") << '\n';
     }
-    out_ << "Prices are before GST; MRP includes GST.\n";
+    out_ << "Prices are before GST; MRP includes GST. EXPIRED items cannot be sold.\n";
 }
 
 void CliApp::printCart() {
@@ -210,14 +212,26 @@ void CliApp::buildCart() {
                 out_ << "No product with id \"" << *id << "\" - see 1 (View catalog).\n";
                 continue;
             }
+            if (const domain::Perishable* p = domain::asPerishable(*product);
+                p != nullptr && p->isExpiredOn(config_.orderDate)) {
+                out_ << product->name() << " expired on " << p->expiryDate()
+                     << " and cannot be sold.\n";
+                continue;
+            }
             const auto qtyText = ask("Quantity [1]: ");
             if (!qtyText) return;
             const auto qty = qtyText->empty() ? std::optional<int>(1) : parseInt(*qtyText);
-            if (!qty || *qty < 1) {
-                out_ << "Quantity must be a whole number of at least 1.\n";
+            if (!qty || *qty < 1 || *qty > domain::CartItem::kMaxQuantity) {
+                out_ << "Quantity must be a whole number from 1 to "
+                     << domain::CartItem::kMaxQuantity << ".\n";
                 continue;
             }
-            cart_ += domain::CartItem(*product, *qty);
+            try {
+                cart_ += domain::CartItem(*product, *qty);
+            } catch (const std::invalid_argument& e) {
+                out_ << "Not added: " << e.what() << ".\n";
+                continue;
+            }
             out_ << "Added " << *qty << " x " << product->name() << ".\n";
         } else if (c == "R") {
             const auto id = ask("Product id to remove: ");

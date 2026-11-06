@@ -61,6 +61,7 @@ add_executable(unit_tests
     test_logger.cpp
     test_stream_log_sink.cpp
     test_file_log_sink.cpp
+    test_perishable.cpp
 )
 target_link_libraries(unit_tests PRIVATE pricing_core GTest::gtest_main)
 # Writable folder for tests that need to change a data file.
@@ -71,7 +72,8 @@ target_compile_definitions(unit_tests PRIVATE
     DATA_DIR="${PROJECT_SOURCE_DIR}/data"
     TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data"
     TEST_SCRATCH_DIR="${TEST_SCRATCH_DIR}")
-target_compile_options(unit_tests PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(unit_tests PRIVATE ${PRICING_WARNINGS})
 
 include(GoogleTest)
-gtest_discover_tests(unit_tests)
+# A generous timeout so test discovery never fails on a slow lab machine.
+gtest_discover_tests(unit_tests DISCOVERY_TIMEOUT 60)

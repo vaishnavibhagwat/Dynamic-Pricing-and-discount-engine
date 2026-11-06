@@ -34,6 +34,10 @@ void ConflictReportPrinter::print(std::ostream& os, const validation::ConflictRe
         if (tag.size() < kTagWidth) tag.append(kTagWidth - tag.size(), ' ');
         os << "  " << tag << subjectOf(issue) << ": " << issue.message << '\n';
     }
+    if (report.count(validation::IssueKind::MarginBreach) > 0) {
+        os << "  Note: a MarginBreach is the worst case if every listed offer stacks.\n"
+              "        At checkout MarginGuard still keeps each line above cost + 8%.\n";
+    }
 }
 
 } // namespace presentation

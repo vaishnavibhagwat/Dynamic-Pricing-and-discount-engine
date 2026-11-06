@@ -50,7 +50,9 @@ void InvoicePrinter::rule(std::ostream& os, char c) const {
 void InvoicePrinter::row(std::ostream& os, const std::string& label,
                          const std::string& value) const {
     const std::size_t valueWidth = displayWidth(value);
-    const std::size_t room = width_ - std::min(width_ - 1, valueWidth + 1); // label space on a row
+    // Label space on a row: the whole width when there is no value, else leave a gap for it.
+    const std::size_t room =
+        value.empty() ? width_ : width_ - std::min(width_ - 1, valueWidth + 1);
     // Label left, value right-aligned; no trailing spaces when there is no value.
     const auto emit = [&](const std::string& text) {
         os << (value.empty() ? text : padRight(text, width_ - valueWidth) + value) << '\n';
@@ -79,7 +81,7 @@ void InvoicePrinter::row(std::ostream& os, const std::string& label,
         firstWord = false;
     }
     for (const auto& l : lines) os << l << '\n';
-    if (displayWidth(current) <= room) {
+    if (displayWidth(current) <= room || value.empty()) {
         emit(current);
     } else {
         os << current << '\n' << std::string(width_ - std::min(width_, valueWidth), ' ') << value

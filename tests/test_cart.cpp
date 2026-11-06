@@ -88,3 +88,24 @@ TEST_F(CartTest, RemoveUnknownProductReturnsFalse) {
     EXPECT_FALSE(cart.remove("NOPE"));
     EXPECT_EQ(cart.items().size(), 1u);
 }
+
+TEST_F(CartTest, QuantityIsCappedPerLine) {
+    EXPECT_NO_THROW(CartItem(earbuds, CartItem::kMaxQuantity));
+    EXPECT_THROW(CartItem(earbuds, CartItem::kMaxQuantity + 1), std::invalid_argument);
+
+    CartItem item(earbuds, 999);
+    EXPECT_THROW(item.increaseQuantity(2), std::invalid_argument);
+    EXPECT_EQ(item.quantity(), 999); // unchanged after the failed call
+    item.increaseQuantity(1);
+    EXPECT_EQ(item.quantity(), CartItem::kMaxQuantity);
+    // Huge values must be refused, not wrap around to a negative number.
+    EXPECT_THROW(item.increaseQuantity(2000000000), std::invalid_argument);
+}
+
+TEST_F(CartTest, MergingPastTheCapLeavesCartUnchanged) {
+    Cart cart;
+    cart += CartItem(earbuds, 600);
+    EXPECT_THROW(cart += CartItem(earbuds, 600), std::invalid_argument);
+    ASSERT_EQ(cart.items().size(), 1u);
+    EXPECT_EQ(cart.items()[0].quantity(), 600);
+}

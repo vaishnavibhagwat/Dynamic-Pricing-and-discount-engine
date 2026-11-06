@@ -8,6 +8,7 @@
 
 #include "domain/Cart.hpp"
 #include "domain/CartItem.hpp"
+#include "domain/Perishable.hpp"
 #include "engine/PricingEngine.hpp"
 
 namespace application {
@@ -51,9 +52,14 @@ std::vector<UpsellSuggestion> UpsellAdvisor::suggest(
     std::vector<UpsellSuggestion> found;
     for (const domain::Product* product : catalog) {
         if (product == nullptr) throw std::invalid_argument("UpsellAdvisor: null product");
+        if (domain::isExpiredOn(*product, ctx.orderDate())) continue; // cannot be sold
 
         domain::Cart bigger = ctx.cart();
-        bigger += domain::CartItem(*product, 1);
+        try {
+            bigger += domain::CartItem(*product, 1);
+        } catch (const std::invalid_argument&) {
+            continue; // that line is already at the most units allowed
+        }
         domain::Cart alone;
         alone += domain::CartItem(*product, 1);
 

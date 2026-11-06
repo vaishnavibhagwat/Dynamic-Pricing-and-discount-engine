@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "infrastructure/Exceptions.hpp"
 #include "rules/CappedRule.hpp"
 #include "application/CheckoutService.hpp"
 #include "engine/StackingResolver.hpp"
@@ -146,4 +147,24 @@ TEST(CheckoutService, DecoratedCouponStillCountsItsUses) {
     const Order o = kurtaOrderWithCoupon();
     EXPECT_EQ(service.checkout(o.context(), kStacking).cartDiscountTotal(), rs(80));
     EXPECT_EQ(service.quote(o.context(), kStacking).cartDiscountTotal(), Money::zero());
+}
+
+TEST(CheckoutService, RefusesToSellExpiredItems) {
+    auto repo = oneTimeCouponRules();
+    CheckoutService service(repo);
+    const auto stale = makeMilk("G9", -1);
+    Order o;
+    o.cart += domain::CartItem(kurta(), 1);
+    o.cart += domain::CartItem(stale, 1);
+    o.coupon = "ONCE";
+    try {
+        service.checkout(o.context(), kStacking, o.customer);
+        FAIL() << "expected PricingError";
+    } catch (const infrastructure::PricingError& e) {
+        EXPECT_NE(std::string(e.what()).find("cannot sell Milk [G9]: it expired on"),
+                  std::string::npos);
+    }
+    // Nothing was recorded: the coupon is still unused and the order not counted.
+    EXPECT_EQ(coupon(repo).usesSoFar(), 0);
+    EXPECT_EQ(o.customer.ordersPlaced(), 0);
 }

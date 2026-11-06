@@ -28,7 +28,7 @@ TEST(RuleScriptLoader, LoadsSampleRulesTxt) {
     ASSERT_NE(repo.findById("KURTA_BULK"), nullptr);
     ASSERT_NE(repo.findById("BIG_BASKET"), nullptr);
     EXPECT_EQ(repo.findById("BIG_BASKET")->name(), "Big basket bonus");
-    EXPECT_NE(dynamic_cast<const rules::CompositeRule*>(repo.findById("DIWALI_GROCERY")), nullptr);
+    EXPECT_NE(dynamic_cast<const rules::CompositeRule*>(repo.findById("FESTIVE_GROCERY")), nullptr);
     // The user's example line has no RULE id, so it is named after its line number.
     const auto autoNamed = repo.filter([](const DiscountRule& r) {
         return r.id().rfind("TXT_L", 0) == 0;

@@ -37,7 +37,7 @@ std::optional<int> ExpiryMarkdown::percentFor(long daysLeft) const noexcept {
 
 std::optional<int> ExpiryMarkdown::percentForItem(const domain::CartItem& item,
                                                   const domain::Date& today) const {
-    const auto* perishable = dynamic_cast<const domain::Perishable*>(&item.product());
+    const domain::Perishable* perishable = domain::asPerishable(item.product());
     if (perishable == nullptr) return std::nullopt;
     return percentFor(today.daysUntil(perishable->expiryDate()));
 }
@@ -55,7 +55,7 @@ domain::Money ExpiryMarkdown::discountForItem(const domain::CartItem& item,
 }
 
 std::optional<int> ExpiryMarkdown::maxPercentOff(const domain::Product& product) const {
-    if (dynamic_cast<const domain::Perishable*>(&product) == nullptr) return std::nullopt;
+    if (domain::asPerishable(product) == nullptr) return std::nullopt;
     int best = 0;
     for (const auto& tier : tiers_) best = std::max(best, tier.percent);
     return best;

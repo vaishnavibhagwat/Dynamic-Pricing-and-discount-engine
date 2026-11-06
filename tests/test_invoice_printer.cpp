@@ -176,3 +176,31 @@ TEST(InvoicePrinter, TraceListsAppliedAndRejectedDecisions) {
     EXPECT_TRUE(contains(trace, "no bank card used for payment"));
     EXPECT_TRUE(contains(trace, "does not cover Kurta"));
 }
+
+TEST(InvoicePrinter, WrappedReasonsNeverLeaveBlankLines) {
+    // Reasons of every length: when a wrapped line exactly filled the width, the
+    // printer used to add a line of spaces after it.
+    Order o;
+    o.cart += domain::CartItem(phone(), 1);
+    // Words up to 50 characters, so every word fits on one 72-character line.
+    for (std::size_t extra = 0; extra < 50; ++extra) {
+        engine::PriceTrace trace;
+        trace.record(engine::TraceEntry::rejected("Seasonal", "R1", "Rule", "E1",
+                                                  "word " + std::string(extra, 'x') +
+                                                      " more words to wrap over the line end"));
+        engine::PricedLine line;
+        line.productId = "E1";
+        line.productName = "Phone";
+        line.quantity = 1;
+        const engine::PricingResult result("Stacking", {line}, {}, trace);
+        std::ostringstream out;
+        InvoicePrinter().print(out, o.context(), result);
+        std::istringstream lines(out.str());
+        std::string text;
+        while (std::getline(lines, text)) {
+            const bool onlySpaces = !text.empty() && text.find_first_not_of(' ') == std::string::npos;
+            EXPECT_FALSE(onlySpaces) << "blank line for extra=" << extra << "\n" << out.str();
+            EXPECT_LE(InvoicePrinter::displayWidth(text), 72u) << text;
+        }
+    }
+}
